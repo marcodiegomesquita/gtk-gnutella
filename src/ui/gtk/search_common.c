@@ -102,10 +102,10 @@ struct accum_rs {
 	results_set_t *rs;				/**< The GUI result set */
 };
 
-static GList *list_searches;	/**< List of search structs */
+static GList *list_searches = NULL;	/**< List of search structs */
 static htable_t *ht_searches;	/**< Maps a gnet_search_t to a search_t */
 
-static search_t *current_search; /**< The search currently displayed */
+static search_t *current_search = NULL; /**< The search currently displayed */
 static GtkWidget *dflt_search_widget;
 
 static const gchar search_file[] = "searches"; /**< "old" file to searches */
@@ -716,6 +716,10 @@ search_gui_clear_results(void)
 	search_gui_update_status(search);
 }
 
+
+static void
+search_gui_switch_search(struct search *search);
+
 /**
  * Remove the search from the list of searches and free all
  * associated resources (including filter and gui stuff).
@@ -763,7 +767,12 @@ search_gui_close_search(search_t *search)
 
 	n = gtk_notebook_page_num(notebook_search_results, search->scrolled_window);
 	g_assert(n >= 0);	/* Must be found! */
-	gtk_notebook_remove_page(notebook_search_results, n);
+	if (gtk_notebook_get_n_pages(notebook_search_results) != 1)
+		gtk_notebook_remove_page(notebook_search_results, n);
+	else {
+		gtk_widget_set_sensitive(search->tree, FALSE);
+		search_gui_switch_search(NULL);
+	}
 
 	hset_free_null(&search->dups);
 	htable_free_null(&search->parents);
